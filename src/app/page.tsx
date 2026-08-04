@@ -2,6 +2,7 @@
 
 import { useGameStore } from '../store/useGameStore';
 import { GameLoop } from '../game/GameLoop';
+import GameScene from '../components/3d/GameScene';
 
 export default function Game() {
   const money = useGameStore((state) => state.money);
@@ -31,9 +32,8 @@ export default function Game() {
         </button>
       </div>
 
-      {/* 3. Espace réservé pour la 3D plus tard */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        {/* Le Canvas React Three Fiber ira ici */}
+      <div className="absolute inset-0 z-0">
+        <GameScene />
       </div>
     </main>
   );
