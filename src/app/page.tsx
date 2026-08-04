@@ -1,10 +1,9 @@
-'use client'; // On passe la page en composant client pour lire le store
+'use client';
 
 import { useGameStore } from '../store/useGameStore';
 import { GameLoop } from '../game/GameLoop';
 
 export default function Game() {
-  // On récupère les données dont on a besoin depuis notre store
   const money = useGameStore((state) => state.money);
   const moneyPerSecond = useGameStore((state) => state.moneyPerSecond);
   const click = useGameStore((state) => state.click);
