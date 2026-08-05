@@ -1,7 +1,7 @@
 'use client'; // Indispensable sur Next.js pour utiliser useEffect
 
 import { useEffect } from 'react';
-import { useGameStore } from '../store/useGameStore';
+import { useGameStore } from '@/store/gameStore';
 
 export function GameLoop() {
   const tick = useGameStore((state) => state.tick);

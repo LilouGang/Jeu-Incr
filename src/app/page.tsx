@@ -1,39 +1,37 @@
 'use client';
 
-import { useGameStore } from '../store/useGameStore';
-import { GameLoop } from '../game/GameLoop';
-import GameScene from '../components/3d/GameScene';
+import GridBackground from '@/components/ui/grid/GridBackground';
+import InteractionCursor from '@/components/ui/cursor/InteractionCursor';
+import PhotonLayer from '@/components/ui/photons/PhotonLayer';
+import EnergyPanel from '@/components/ui/panels/EnergyPanel';
+import { GameLoop } from '@/components/logic/GameLoop';
+import { useGameStore } from '@/store/gameStore';
 
-export default function Game() {
-  const money = useGameStore((state) => state.money);
-  const moneyPerSecond = useGameStore((state) => state.moneyPerSecond);
-  const click = useGameStore((state) => state.click);
+export default function Home() {
+  const setMouseMode = useGameStore(state => state.setMouseMode);
 
   return (
-    <main className="w-screen h-screen overflow-hidden bg-gray-900 text-white flex flex-col items-center justify-center relative">
-      {/* 1. On lance le moteur du jeu en fond */}
+    <main className="relative w-screen h-screen bg-white overflow-hidden cursor-none select-none">
+      {/* 1. Le Moteur Logique (invisible) */}
       <GameLoop />
 
-      {/* 2. L'interface temporaire */}
-      <div className="z-10 flex flex-col items-center gap-6 p-8 bg-gray-800 rounded-2xl shadow-xl">
-        <div className="text-center">
-          <h1 className="text-5xl font-bold text-yellow-400">
-            {/* On utilise Math.floor pour un affichage propre sans les décimales */}
-            {Math.floor(money)} $
-          </h1>
-          <p className="text-gray-400 mt-2">{moneyPerSecond} $/sec</p>
-        </div>
+      {/* 2. Le Fond et la grille */}
+      <GridBackground />
 
-        <button 
-          onClick={click}
-          className="px-8 py-4 bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all rounded-xl font-bold text-xl shadow-lg"
-        >
-          Travailler !
-        </button>
-      </div>
+      {/* 3. Les Entités */}
+      <PhotonLayer />
 
-      <div className="absolute inset-0 z-0">
-        <GameScene />
+      {/* 4. Le Curseur */}
+      <InteractionCursor />
+
+      {/* 5. L'Interface UI */}
+      <EnergyPanel />
+
+      {/* Boutons de test temporaires */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex gap-4">
+        <button className="text-sm bg-white border border-gray-300 px-4 py-2 rounded shadow hover:bg-gray-50" onClick={() => setMouseMode('COLLECT')}>Collecter</button>
+        <button className="text-sm bg-white border border-gray-300 px-4 py-2 rounded shadow hover:bg-gray-50 text-green-600" onClick={() => setMouseMode('BUILD')}>Construire</button>
+        <button className="text-sm bg-white border border-gray-300 px-4 py-2 rounded shadow hover:bg-gray-50 text-red-600" onClick={() => setMouseMode('DESTROY')}>Détruire</button>
       </div>
     </main>
   );
