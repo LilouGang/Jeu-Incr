@@ -1,38 +1,57 @@
 'use client';
 
+import { useEffect } from 'react';
 import GridBackground from '@/components/ui/grid/GridBackground';
 import InteractionCursor from '@/components/ui/cursor/InteractionCursor';
 import PhotonLayer from '@/components/ui/photons/PhotonLayer';
 import EnergyPanel from '@/components/ui/panels/EnergyPanel';
+import SkillTreePanel from '@/components/ui/panels/SkillTreePanel';
 import { GameLoop } from '@/components/logic/GameLoop';
 import { useGameStore } from '@/store/gameStore';
 
 export default function Home() {
   const setMouseMode = useGameStore(state => state.setMouseMode);
+  // On récupère la fonction pour ouvrir/fermer le menu de recherche
+  const toggleSkillTree = useGameStore(state => state.toggleSkillTree); 
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '1') {
+        // Appuyer sur 1 alterne entre "Récolte" et "Souris normale"
+        const currentMode = useGameStore.getState().mouseMode;
+        setMouseMode(currentMode === 'COLLECT' ? 'IDLE' : 'COLLECT');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setMouseMode]);
 
   return (
-    <main className="relative w-screen h-screen bg-white overflow-hidden cursor-none select-none">
-      {/* 1. Le Moteur Logique (invisible) */}
+    <main className="fixed inset-0 bg-white overflow-hidden select-none">
+      
       <GameLoop />
-
-      {/* 2. Le Fond et la grille */}
       <GridBackground />
-
-      {/* 3. Les Entités */}
       <PhotonLayer />
-
-      {/* 4. Le Curseur */}
       <InteractionCursor />
-
-      {/* 5. L'Interface UI */}
       <EnergyPanel />
+      <SkillTreePanel />
 
-      {/* Boutons de test temporaires */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex gap-4">
-        <button className="text-sm bg-white border border-gray-300 px-4 py-2 rounded shadow hover:bg-gray-50" onClick={() => setMouseMode('COLLECT')}>Collecter</button>
-        <button className="text-sm bg-white border border-gray-300 px-4 py-2 rounded shadow hover:bg-gray-50 text-green-600" onClick={() => setMouseMode('BUILD')}>Construire</button>
-        <button className="text-sm bg-white border border-gray-300 px-4 py-2 rounded shadow hover:bg-gray-50 text-red-600" onClick={() => setMouseMode('DESTROY')}>Détruire</button>
-      </div>
+      {/* Le bouton d'accès à l'arbre de compétences */}
+      <button 
+        onClick={toggleSkillTree}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-30 bg-gray-100/95 backdrop-blur-md border border-gray-300 border-l-0 px-2 py-5 rounded-r-xl shadow-md flex flex-col items-center gap-3 group transition-all duration-300 hover:pr-4 hover:bg-gray-200 cursor-pointer"
+      >
+        <svg className="w-5 h-5 text-gray-500 group-hover:text-black transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+        </svg>
+        <span 
+          className="text-[10px] font-bold tracking-widest text-gray-500 group-hover:text-black transition-colors uppercase" 
+          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+        >
+          Recherche
+        </span>
+      </button>
+
     </main>
   );
 }

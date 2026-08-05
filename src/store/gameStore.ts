@@ -1,115 +1,104 @@
 import { create } from 'zustand';
+import { processGameTick } from '@/game/engine';
 
-export type MouseMode = 'COLLECT' | 'BUILD' | 'DESTROY';
+export type MouseMode = 'IDLE' | 'COLLECT' | 'BUILD' | 'DESTROY';
 
-interface Photon {
+export interface Photon {
   id: number;
-  x: number; // Position X (en pourcentage d'écran)
-  y: number; // Position Y (en pourcentage d'écran)
-  vx: number; // Vitesse sur X
-  vy: number; // Vitesse sur Y
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  isCollected?: boolean;
+  collectionTicks?: number;
 }
 
-interface GameState {
+export interface GameState {
+  photonSpawnDelayTicks: number;
+  photonBaseSpeed: number;
+  photonBurstSpeed: number;
+  
+  energyPerPhoton: number; 
   energy: number;
   energyPerSecond: number;
+  cursorSize: number;
   photons: Photon[];
   hasCollectedFirst: boolean;
   mouseMode: MouseMode;
   mouseX: number;
   mouseY: number;
 
-  // Compteurs internes
+  // --- NOUVEL ARBRE DE COMPÉTENCES ---
+  isSkillTreeOpen: boolean;
+  unlockedSkills: string[]; // Ex: ['spawn_1', 'machine_1']
+
   tickCount: number;
+  ticksSinceLastSpawn: number;
   energyLastSecond: number;
   photonIdCounter: number;
 
   setMousePosition: (x: number, y: number) => void;
   setMouseMode: (mode: MouseMode) => void;
+  toggleSkillTree: () => void;
+  
+  // La nouvelle fonction universelle d'achat
+  unlockSkill: (skillId: string, cost: number) => void;
+  
   tick: () => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
+  photonSpawnDelayTicks: 10,
+  photonBaseSpeed: 0.6,
+  photonBurstSpeed: 6.0,
+
+  energyPerPhoton: 1,
+  cursorSize: 20,
   energy: 0,
   energyPerSecond: 0,
   photons: [],
   hasCollectedFirst: false,
-  mouseMode: 'COLLECT',
+  mouseMode: 'IDLE',
   mouseX: 50,
   mouseY: 50,
+  
+  isSkillTreeOpen: false,
+  unlockedSkills: [], // Au début, l'arbre est vide
+
   tickCount: 0,
+  ticksSinceLastSpawn: 0,
   energyLastSecond: 0,
   photonIdCounter: 0,
 
   setMousePosition: (x, y) => set({ mouseX: x, mouseY: y }),
   setMouseMode: (mode) => set({ mouseMode: mode }),
+  toggleSkillTree: () => set((state) => ({ isSkillTreeOpen: !state.isSkillTreeOpen })),
 
-  tick: () => set((state) => {
-    let newPhotons = [...state.photons];
-    let newEnergy = state.energy;
-    let collectedThisTick = 0;
+  unlockSkill: (skillId, cost) => set((state) => {
+    if (state.energy >= cost && !state.unlockedSkills.includes(skillId)) {
+      const newState = {
+        energy: state.energy - cost,
+        unlockedSkills: [...state.unlockedSkills, skillId],
+        photonSpawnDelayTicks: state.photonSpawnDelayTicks,
+        energyPerPhoton: state.energyPerPhoton,
+        cursorSize: state.cursorSize // On le propage
+      };
 
-    // 1. Déplacer les photons existants
-    newPhotons = newPhotons.map(p => ({
-      ...p,
-      x: p.x + p.vx,
-      y: p.y + p.vy
-    }));
-
-    // 2. Nettoyer les photons qui sortent de l'écran (0 à 100%)
-    newPhotons = newPhotons.filter(p => p.x >= 0 && p.x <= 100 && p.y >= 0 && p.y <= 100);
-
-    // 3. Collision avec la souris (Uniquement en mode COLLECT)
-    const COLLECTION_RADIUS = 3; // Rayon de capture (environ la taille du cercle)
-    if (state.mouseMode === 'COLLECT') {
-      newPhotons = newPhotons.filter(p => {
-        const dx = p.x - state.mouseX;
-        const dy = p.y - state.mouseY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < COLLECTION_RADIUS) {
-          newEnergy += 1;
-          collectedThisTick += 1;
-          return false; // Le photon est absorbé, on le retire du tableau
-        }
-        return true;
-      });
+      // === LE CÂBLAGE DIRECT ET EFFICACE ===
+      if (skillId === 'spawn_1') newState.photonSpawnDelayTicks = 5;
+      if (skillId === 'spawn_2') newState.photonSpawnDelayTicks = 3;
+      if (skillId === 'spawn_3') newState.photonSpawnDelayTicks = 2;
+      
+      if (skillId === 'energy_1') newState.energyPerPhoton = 2;
+      
+      // La nouvelle branche !
+      if (skillId === 'radius_1') newState.cursorSize = 40; // Double la taille
+      if (skillId === 'radius_2') newState.cursorSize = 80; // Quadruple
+      
+      return newState;
     }
+    return state;
+  }),
 
-    // 4. Générer de nouveaux photons depuis le centre (50%, 50%)
-    let newId = state.photonIdCounter;
-    // ~20% de chance d'apparaître à chaque tick (soit ~2 photons par seconde)
-    if (Math.random() < 0.2) {
-      const angle = Math.random() * Math.PI * 2; // Direction aléatoire
-      const speed = 0.6; // Vitesse de déplacement
-      newPhotons.push({
-        id: newId++,
-        x: 50,
-        y: 50,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed
-      });
-    }
-
-    // 5. Calculer l'Énergie par Seconde (tous les 10 ticks = 1 seconde)
-    let newTickCount = state.tickCount + 1;
-    let newEps = state.energyPerSecond;
-    let newEnergyLastSecond = state.energyLastSecond;
-
-    if (newTickCount >= 10) {
-      newEps = newEnergy - state.energyLastSecond;
-      newEnergyLastSecond = newEnergy;
-      newTickCount = 0;
-    }
-
-    return {
-      photons: newPhotons,
-      energy: newEnergy,
-      photonIdCounter: newId,
-      hasCollectedFirst: state.hasCollectedFirst || collectedThisTick > 0,
-      tickCount: newTickCount,
-      energyPerSecond: newEps,
-      energyLastSecond: newEnergyLastSecond
-    };
-  })
+  tick: () => set((state) => processGameTick(state))
 }));
