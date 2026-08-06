@@ -3,6 +3,14 @@ import { processGameTick } from '@/game/engine';
 
 export type MouseMode = 'IDLE' | 'COLLECT' | 'BUILD' | 'DESTROY';
 
+export interface Drone {
+  id: number;
+  orbitRadius: number;     // Distance en pixels depuis l'étoile
+  angle: number;           // Position actuelle sur le cercle (en radians)
+  speed: number;           // Vitesse de rotation
+  collectionRadius: number;// Taille de son "filet" à photons
+}
+
 export interface Photon {
   id: number;
   x: number;
@@ -23,6 +31,7 @@ export interface GameState {
   energyPerSecond: number;
   cursorSize: number;
   photons: Photon[];
+  drones: Drone[];
   hasCollectedFirst: boolean;
   mouseMode: MouseMode;
   mouseX: number;
@@ -48,15 +57,16 @@ export interface GameState {
 }
 
 export const useGameStore = create<GameState>((set) => ({
-  photonSpawnDelayTicks: 10,
-  photonBaseSpeed: 0.6,
-  photonBurstSpeed: 6.0,
+  photonSpawnDelayTicks: 30,
+  photonBaseSpeed: 0.1,
+  photonBurstSpeed: 1.0,
 
   energyPerPhoton: 1,
   cursorSize: 20,
   energy: 0,
   energyPerSecond: 0,
   photons: [],
+  drones: [],
   hasCollectedFirst: false,
   mouseMode: 'IDLE',
   mouseX: 50,
@@ -81,7 +91,8 @@ export const useGameStore = create<GameState>((set) => ({
         unlockedSkills: [...state.unlockedSkills, skillId],
         photonSpawnDelayTicks: state.photonSpawnDelayTicks,
         energyPerPhoton: state.energyPerPhoton,
-        cursorSize: state.cursorSize // On le propage
+        cursorSize: state.cursorSize,
+        drones: [...state.drones]
       };
 
       // === LE CÂBLAGE DIRECT ET EFFICACE ===
@@ -94,6 +105,16 @@ export const useGameStore = create<GameState>((set) => ({
       // La nouvelle branche !
       if (skillId === 'radius_1') newState.cursorSize = 40; // Double la taille
       if (skillId === 'radius_2') newState.cursorSize = 80; // Quadruple
+
+      if (skillId === 'drone_1') {
+        newState.drones.push({
+          id: 1,
+          orbitRadius: 150, // Il tournera à 150px de l'étoile
+          angle: 0,
+          speed: 0.015,     // Vitesse de rotation
+          collectionRadius: 30
+        });
+      }
       
       return newState;
     }

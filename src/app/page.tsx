@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 import GridBackground from '@/components/ui/grid/GridBackground';
+import CentralStar from '@/components/ui/stars/CentralStar';
+import DroneLayer from '@/components/ui/drones/DroneLayer';
 import InteractionCursor from '@/components/ui/cursor/InteractionCursor';
 import PhotonLayer from '@/components/ui/photons/PhotonLayer';
 import EnergyPanel from '@/components/ui/panels/EnergyPanel';
@@ -31,12 +33,21 @@ export default function Home() {
       
       <GameLoop />
       <GridBackground />
+      
+      {/* 1. Les photons tout au fond */}
       <PhotonLayer />
+      
+      {/* 2. L'étoile se dessine par-dessus les photons */}
+      <CentralStar />
+      
+      {/* 3. Les drones volent au-dessus de l'étoile */}
+      <DroneLayer />
+      
+      {/* 4. L'interface (Souris, Menus) passe en tout premier plan */}
       <InteractionCursor />
       <EnergyPanel />
       <SkillTreePanel />
 
-      {/* Le bouton d'accès à l'arbre de compétences */}
       <button 
         onClick={toggleSkillTree}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-30 bg-gray-100/95 backdrop-blur-md border border-gray-300 border-l-0 px-2 py-5 rounded-r-xl shadow-md flex flex-col items-center gap-3 group transition-all duration-300 hover:pr-4 hover:bg-gray-200 cursor-pointer"

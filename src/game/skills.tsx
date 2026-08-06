@@ -24,10 +24,10 @@ export const SKILLS: SkillDef[] = [
     parent: 'spawn_1' 
   },
   { 
-    id: 'machine_1', x: -150, y: 0, cost: 200, 
-    title: 'Canalisateur', 
-    effect: 'Débloque les machines', 
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><rect x="4" y="4" width="16" height="16" rx="2" ry="2" /></svg>,
+    id: 'drone_1', x: -150, y: 0, cost: 100, 
+    title: 'Voilier Solaire', 
+    effect: '1er Drone Orbital', 
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 22l10-4 10 4L12 2z" /></svg>,
     parent: 'energy_1' 
   },
 

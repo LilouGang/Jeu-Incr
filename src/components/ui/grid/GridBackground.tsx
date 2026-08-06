@@ -74,10 +74,6 @@ export default function GridBackground() {
           <path key={idx} d={d} fill="none" stroke="#9ca3af" strokeWidth="1" />
         ))}
       </svg>
-
-      {/* Le centre massif */}
-       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-black rounded-full shadow-[0_0_15px_rgba(0,0,0,0.4)]" />
-
     </div>
   );
 }

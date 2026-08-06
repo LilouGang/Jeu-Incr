@@ -29,7 +29,7 @@ export default function PhotonLayer() {
         }
       `}</style>
 
-      <div className="absolute inset-0 z-20 pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
         {photons.map(photon => (
           <div
             key={photon.id}

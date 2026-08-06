@@ -10,7 +10,7 @@ export function GameLoop() {
     // On crée une boucle qui s'exécute toutes les 100 millisecondes (10 fois par seconde)
     const interval = setInterval(() => {
       tick();
-    }, 100);
+    }, 16);
 
     // Nettoyage au démontage pour éviter les fuites de mémoire
     return () => clearInterval(interval);
