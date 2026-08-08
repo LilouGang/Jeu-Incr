@@ -2,12 +2,12 @@
 
 import { useState, useRef } from 'react';
 import { useGameStore } from '@/store/gameStore';
-import { SKILLS } from '@/game/skills';
+import { SKILL_TREE } from '@/data/skillTree';
 import SkillTreeNode from './SkillTreeNode';
 
 export default function SkillTreePanel() {
   const isOpen = useGameStore(state => state.isSkillTreeOpen);
-  const unlockedSkills = useGameStore(state => state.unlockedSkills);
+  const skillLevels = useGameStore(state => state.skillLevels);
 
   const [camera, setCamera] = useState({ x: 0, y: 0, scale: 1 });
   const isDragging = useRef(false);
@@ -29,22 +29,22 @@ export default function SkillTreePanel() {
   const handleMouseUp = () => isDragging.current = false;
 
   const handleWheel = (e: React.WheelEvent) => {
-    const zoomDirection = e.deltaY > 0 ? -1 : 1;
     setCamera(prev => {
-      const newScale = Math.max(0.3, Math.min(2, prev.scale + (zoomDirection * 0.05)));
+      // Zoom exponentiel : on multiplie pour avoir la même sensation à n'importe quelle échelle
+      // 0.85 = dézoom de 15%, 1.15 = zoom de 15%
+      const zoomFactor = e.deltaY > 0 ? 0.95 : 1.05;
       
-      // FORMULE DE ZOOM SUR CURSEUR
+      // On applique le multiplicateur et on bloque entre 0.3x et 2x
+      const newScale = Math.max(0.3, Math.min(2, prev.scale * zoomFactor));
+      
       const ratio = newScale / prev.scale;
       
-      // On trouve le centre exact de l'écran
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       
-      // On calcule la distance de la souris par rapport au centre
       const mouseX = e.clientX - centerX;
       const mouseY = e.clientY - centerY;
 
-      // On translate la grille en sens inverse pour garder le point sous la souris
       const newX = prev.x * ratio - mouseX * (ratio - 1);
       const newY = prev.y * ratio - mouseY * (ratio - 1);
 
@@ -75,27 +75,29 @@ export default function SkillTreePanel() {
         className="absolute top-1/2 left-1/2 w-0 h-0 pointer-events-none"
         style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})` }}
       >
-        {/* Les traits */}
         <svg className="absolute overflow-visible z-0 pointer-events-none">
-          {SKILLS.map(skill => {
-            if (!skill.parent) return null;
-            const parentSkill = SKILLS.find(s => s.id === skill.parent);
-            if (!parentSkill || !unlockedSkills.includes(parentSkill.id)) return null;
+          {Object.values(SKILL_TREE).flatMap(skill => 
+            skill.parentIds.map(parentId => {
+              const parentSkill = SKILL_TREE[parentId];
+              
+              // On utilise bien skillLevels ici !
+              if (!parentSkill || (skillLevels[parentId] || 0) === 0) return null;
 
-            return (
-              <line 
-                key={`line-${skill.id}`}
-                x1={parentSkill.x} y1={parentSkill.y} 
-                x2={skill.x} y2={skill.y} 
-                stroke="#94a3b8" strokeWidth="3" strokeDasharray="6 8"
-                className="animate-in fade-in duration-500"
-              />
-            );
-          })}
+              return (
+                <line 
+                  key={`line-${parentId}-${skill.id}`}
+                  x1={parentSkill.gridX} y1={parentSkill.gridY} 
+                  x2={skill.gridX} y2={skill.gridY} 
+                  stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 6" 
+                  className="animate-in fade-in duration-500"
+                />
+              );
+            })
+          )}
         </svg>
 
-        {/* L'appel à notre nouveau composant Nœud allégé */}
-        {SKILLS.map(skill => (
+        {/* L'appel à notre composant Nœud */}
+        {Object.values(SKILL_TREE).map(skill => (
           <SkillTreeNode 
             key={skill.id} 
             skill={skill} 

@@ -8,6 +8,7 @@ import InteractionCursor from '@/components/ui/cursor/InteractionCursor';
 import PhotonLayer from '@/components/ui/photons/PhotonLayer';
 import EnergyPanel from '@/components/ui/panels/EnergyPanel';
 import SkillTreePanel from '@/components/ui/panels/SkillTreePanel';
+import DevMenu from '@/components/ui/dev/DevMenu';
 import { GameLoop } from '@/components/logic/GameLoop';
 import { useGameStore } from '@/store/gameStore';
 
@@ -62,6 +63,7 @@ export default function Home() {
           Recherche
         </span>
       </button>
+      <DevMenu />
 
     </main>
   );

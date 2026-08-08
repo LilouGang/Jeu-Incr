@@ -1,124 +1,122 @@
 import { create } from 'zustand';
 import { processGameTick } from '@/game/engine';
+import { SKILL_TREE } from '@/data/skillTree';
 
 export type MouseMode = 'IDLE' | 'COLLECT' | 'BUILD' | 'DESTROY';
 
-export interface Drone {
-  id: number;
-  orbitRadius: number;     // Distance en pixels depuis l'étoile
-  angle: number;           // Position actuelle sur le cercle (en radians)
-  speed: number;           // Vitesse de rotation
-  collectionRadius: number;// Taille de son "filet" à photons
+export interface Photon {
+  id: number; x: number; y: number; vx: number; vy: number;
+  isCollected?: boolean; collectionTicks?: number;
 }
 
-export interface Photon {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  isCollected?: boolean;
-  collectionTicks?: number;
+export interface Drone {
+  id: number; orbitRadius: number; angle: number; speed: number; collectionRadius: number;
 }
 
 export interface GameState {
   photonSpawnDelayTicks: number;
   photonBaseSpeed: number;
-  photonBurstSpeed: number;
-  
   energyPerPhoton: number; 
+  cursorSize: number; 
+  
   energy: number;
   energyPerSecond: number;
-  cursorSize: number;
   photons: Photon[];
   drones: Drone[];
-  hasCollectedFirst: boolean;
-  mouseMode: MouseMode;
-  mouseX: number;
-  mouseY: number;
 
-  // --- NOUVEL ARBRE DE COMPÉTENCES ---
+  hasCollectedFirst: boolean;
+  
+  // --- NOUVEAU : GESTION DES NIVEAUX ---
   isSkillTreeOpen: boolean;
-  unlockedSkills: string[]; // Ex: ['spawn_1', 'machine_1']
+  skillLevels: Record<string, number>; // Ex: { nucleosynthese: 2, voilier_solaire: 1 }
 
   tickCount: number;
-  ticksSinceLastSpawn: number;
-  energyLastSecond: number;
-  photonIdCounter: number;
+  mouseMode: MouseMode;
+  mouseX: number; mouseY: number;
 
   setMousePosition: (x: number, y: number) => void;
   setMouseMode: (mode: MouseMode) => void;
   toggleSkillTree: () => void;
   
-  // La nouvelle fonction universelle d'achat
-  unlockSkill: (skillId: string, cost: number) => void;
-  
+  unlockSkill: (skillId: string) => void;
   tick: () => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
-  photonSpawnDelayTicks: 30,
+  photonSpawnDelayTicks: 120, 
   photonBaseSpeed: 0.1,
-  photonBurstSpeed: 1.0,
-
   energyPerPhoton: 1,
-  cursorSize: 20,
+  cursorSize: 20, 
+
   energy: 0,
   energyPerSecond: 0,
   photons: [],
   drones: [],
+
   hasCollectedFirst: false,
-  mouseMode: 'IDLE',
-  mouseX: 50,
-  mouseY: 50,
   
   isSkillTreeOpen: false,
-  unlockedSkills: [], // Au début, l'arbre est vide
+  skillLevels: {}, // Tout est à 0 au début
 
   tickCount: 0,
-  ticksSinceLastSpawn: 0,
-  energyLastSecond: 0,
-  photonIdCounter: 0,
+  mouseMode: 'IDLE',
+  mouseX: 50, mouseY: 50,
 
   setMousePosition: (x, y) => set({ mouseX: x, mouseY: y }),
   setMouseMode: (mode) => set({ mouseMode: mode }),
   toggleSkillTree: () => set((state) => ({ isSkillTreeOpen: !state.isSkillTreeOpen })),
 
-  unlockSkill: (skillId, cost) => set((state) => {
-    if (state.energy >= cost && !state.unlockedSkills.includes(skillId)) {
-      const newState = {
-        energy: state.energy - cost,
-        unlockedSkills: [...state.unlockedSkills, skillId],
-        photonSpawnDelayTicks: state.photonSpawnDelayTicks,
-        energyPerPhoton: state.energyPerPhoton,
-        cursorSize: state.cursorSize,
-        drones: [...state.drones]
-      };
+  unlockSkill: (skillId) => set((state) => {
+    const skill = SKILL_TREE[skillId];
+    if (!skill) return state;
 
-      // === LE CÂBLAGE DIRECT ET EFFICACE ===
-      if (skillId === 'spawn_1') newState.photonSpawnDelayTicks = 5;
-      if (skillId === 'spawn_2') newState.photonSpawnDelayTicks = 3;
-      if (skillId === 'spawn_3') newState.photonSpawnDelayTicks = 2;
-      
-      if (skillId === 'energy_1') newState.energyPerPhoton = 2;
-      
-      // La nouvelle branche !
-      if (skillId === 'radius_1') newState.cursorSize = 40; // Double la taille
-      if (skillId === 'radius_2') newState.cursorSize = 80; // Quadruple
+    const currentLevel = state.skillLevels[skillId] || 0;
+    if (currentLevel >= skill.maxLevel) return state; // Niveau max atteint
 
-      if (skillId === 'drone_1') {
+    // Calcul du coût dynamique : prix de base * (multiplicateur ^ niveau)
+    const cost = Math.floor(skill.baseCost * Math.pow(skill.costMultiplier, currentLevel));
+    if (state.energy < cost) return state;
+
+    const newState = {
+      energy: state.energy - cost,
+      skillLevels: { ...state.skillLevels, [skillId]: currentLevel + 1 },
+      photonSpawnDelayTicks: state.photonSpawnDelayTicks,
+      photonBaseSpeed: state.photonBaseSpeed,
+      energyPerPhoton: state.energyPerPhoton,
+      cursorSize: state.cursorSize,
+      drones: [...state.drones]
+    };
+
+    // === APPLICATION AUTOMATIQUE DES EFFETS ===
+    const effects = skill.effectPerLevel;
+    
+    if (effects.spawnDelayMultiplier) {
+      newState.photonSpawnDelayTicks = Math.max(1, Math.floor(state.photonSpawnDelayTicks * effects.spawnDelayMultiplier));
+    }
+    if (effects.energyValueAdder) {
+      newState.energyPerPhoton += effects.energyValueAdder;
+    }
+    if (effects.speedMultiplier) {
+      newState.photonBaseSpeed *= effects.speedMultiplier;
+      // Supprime la ligne photonBurstSpeed ici !
+    }
+    if (effects.maxDronesAdded) {
+      for(let i = 0; i < effects.maxDronesAdded; i++) {
+        const droneCount = newState.drones.length;
         newState.drones.push({
-          id: 1,
-          orbitRadius: 150, // Il tournera à 150px de l'étoile
-          angle: 0,
-          speed: 0.015,     // Vitesse de rotation
+          id: droneCount + 1,
+          orbitRadius: 220, // Plus loin de l'étoile, tous sur la même orbite !
+          angle: Math.random() * Math.PI * 2,
+          speed: 0.002 + (Math.random() * 0.001), // Beaucoup plus lent
           collectionRadius: 30
         });
       }
-      
-      return newState;
     }
-    return state;
+    if (effects.collectionRadiusAdder) {
+      newState.cursorSize += effects.collectionRadiusAdder;
+    }
+
+    return newState;
   }),
 
   tick: () => set((state) => processGameTick(state))

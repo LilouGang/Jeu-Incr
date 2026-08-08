@@ -30,7 +30,7 @@ export default function DroneLayer() {
             }}
           >
             {/* L'apparence du drone : Un losange technologique */}
-            <div className="w-4 h-4 bg-slate-800 rotate-45 border border-blue-400 shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
+            <div className="w-2 h-2 bg-slate-800 rotate-45 border border-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)]" />
             
             {/* Le filet de collision invisible (Pour le debug ou l'esthétisme) */}
             <div 
